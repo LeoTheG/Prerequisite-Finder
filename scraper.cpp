@@ -21,16 +21,17 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
 
 bool sayYes(string result); 
 bool tryAgain(string & result, bool & searchAgain); 
+void fixSubject(string & subject);
+void fixSpaces(string & str);
 
 string getCourseURL(string str);
 
 //TODO: Instead of writing to file, get string directly?
+//TODO: fix no prerequisite after id (id after id before prerequisite)
 int main(void)
 {
     // used to denote if searching for class again or not
     bool searchAgain = true;
-
-    locale loc;
 
     // search loop
     while ( searchAgain == true ) {
@@ -48,10 +49,16 @@ int main(void)
         for ( int i = 0; i < subject.length(); i++ ) {
             subject[i] = toupper(subject[i]);
         }
+        fixSubject(subject);
         // file handling
         CURL *curl_handle;
         static const char *headerfilename = "head.txt";
         FILE *headerfile;
+
+        if ( subject.compare("BICD") == 0 ) {
+            subject = "BIOL";
+        }
+
 
         string endurl = ".html";
 
@@ -65,7 +72,6 @@ int main(void)
         curl_handle = curl_easy_init();
 
         /* set URL to get */
-        //curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/courses/MATH.html");
         curl_easy_setopt(curl_handle, CURLOPT_URL, urlStr.c_str());
 
         /* no progress meter please */
@@ -136,17 +142,45 @@ int main(void)
 
         string prereqSubStr = str.substr(pos);
 
-        string prereqStr = "Prerequisites:</strong>";
-
-        int prereqPos = prereqSubStr.find(prereqStr);
-
-        //cout << prereqSubStr.substr(prereqPos + prereqStr.size()) << endl;
+        string prereqStr = "Prerequisites:";
+        string prereqStrend = "</strong>";
         string endSubStr = "</p>";
-        int endPos = prereqSubStr.substr(prereqPos + prereqStr.size()).find(endSubStr); 
+        string idStr = "a id=";
 
-        string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + 1, endPos - 1);
+        // find first occurence of "Prerequisites:" after class name
+        int fixprereqPos = prereqSubStr.find(prereqStr);
 
-        cout << newStr << endl;
+        // find "a id="
+
+        int idPos = prereqSubStr.find(idStr);
+
+        if ( idPos < fixprereqPos ) {
+            cout << "none." << endl;
+        }
+        else {
+
+            // fix situation of "Prerequisites: "
+            if ( fixprereqPos != -1 && (prereqSubStr[fixprereqPos+1]) == ' ' ) {
+                cout << "Fixed\n";
+                prereqStr += " ";
+            }
+
+            int prereqPos = prereqSubStr.find(prereqStr);
+
+            // get substring between "Prerequisites:" and "</p>"
+            int endPos = prereqSubStr.substr(prereqPos + prereqStr.size() + prereqStrend.size()).find(endSubStr); 
+
+            // fix substring to trim edges -- make neater
+            string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + prereqStrend.size() + 1, endPos - 1);
+
+            //fixSpaces(newStr);
+
+            ofstream out ("stuff", ofstream::out);
+
+            out << newStr;
+
+            cout << newStr << endl;
+        }
 
         tryAgain(result,searchAgain);
 
@@ -188,3 +222,47 @@ bool tryAgain(string & result, bool & searchAgain) {
     }
 
 }
+
+void fixSubject(string & subject) {
+    string swapBIOL[11] = {"BILD", "BIBC", "BICD", "BIEB", "BIMM", "BIPN", "BISP", "BGGN", "BGJC", "BGRD", "BGSE"};
+    string swapNANO = "CENG";
+    string swapLING = "LI";
+    string swapHIST = "HI";
+
+    if ( !subject.substr(0,2).compare("LI") ) { 
+        subject = "LING";
+        return;
+    }
+    if ( !subject.substr(0,2).compare(swapHIST) ) {
+        subject = "HIST";
+        return;
+    }
+
+    if ( !subject.compare(swapNANO) ) {
+        subject = "NANO";
+        return;
+    }
+    for ( int i = 0; i < 11; i++ ) {
+        if ( !subject.compare(swapBIOL[i]) )
+            subject = "BIOL";
+    }
+}
+
+
+void fixSpaces(string & str) {
+
+    string end = "";
+    string beg = "";
+
+    for ( int i = 0; i < str.length() - 1; i++ ) {
+        // cut out from middle of string
+        if( (str[i] == ' ' || str[i] == 9 || str[i] == 8) && 
+            (str[i+1] == ' ' || str[i+1] == 9 || str[i+1] == 8 )) {
+            end = str.substr(str.find(str[i+2]));
+            beg = str.substr(0, 2);
+            str = beg + end;
+        }
+    }
+    str = beg + " " + end;
+}
+
