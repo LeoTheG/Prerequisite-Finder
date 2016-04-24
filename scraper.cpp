@@ -82,14 +82,16 @@ int main(void)
     sstr << in.rdbuf();
     string str = sstr.str();
 
-    // search for MATH20C
+    /* -- CUSTOM CLASS SEARCH -- */
 
-    int pos = str.find("math20c");
+    string searchStr = "";
+
+    cout << "Enter class name: ";
+    cin >> searchStr;
+
+    int pos = str.find(searchStr);
+    //int pos = str.find(argv[1]);
     
-    //str.substr(str.find("math20c"));
-
-    //cout << pos << endl;
-
     string prereqSubStr = str.substr(pos);
 
     string prereqStr = "Prerequisites:</strong>";
@@ -97,12 +99,13 @@ int main(void)
     int prereqPos = prereqSubStr.find(prereqStr);
 
     //cout << prereqSubStr.substr(prereqPos + prereqStr.size()) << endl;
-    string endSubStr = " </p>";
+    string endSubStr = "</p>";
     int endPos = prereqSubStr.substr(prereqPos + prereqStr.size()).find(endSubStr); 
 
-    string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + 1, endPos);
+    string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + 1, endPos - 1);
 
     cout << newStr << endl;
 
+    
     return 0;
 }
