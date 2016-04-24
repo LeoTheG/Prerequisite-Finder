@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <ctype.h>
+#include <cstring>
 
 #include <curl/curl.h>
 #include <curl/types.h>
@@ -18,19 +20,44 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
 }
 
 bool sayYes(string result); 
+bool tryAgain(string & result, bool & searchAgain); 
 
+string getCourseURL(string str);
+
+//TODO: Instead of writing to file, get string directly?
 int main(void)
-//int main(int argc, char * argv[])
 {
+    // used to denote if searching for class again or not
     bool searchAgain = true;
+
+    locale loc;
+
+    // search loop
     while ( searchAgain == true ) {
+        
+        // get class name
+        string searchStr = "";
+        // get subject (MATH, ANTH, etc.) - derived from class name
+        string subject = "";
+        string result = "";
+
+        cout << "Enter class name: ";
+        cin >> searchStr;
+
+        subject = getCourseURL(searchStr);
+        for ( int i = 0; i < subject.length(); i++ ) {
+            subject[i] = toupper(subject[i]);
+        }
+        // file handling
         CURL *curl_handle;
         static const char *headerfilename = "head.txt";
         FILE *headerfile;
-        //static const char *bodyfilename = "body.txt";
-        //FILE *bodyfile;
 
-        string url = "http://www.ucsd.edu/catalog/courses/";
+        string endurl = ".html";
+
+        string begurl = "http://www.ucsd.edu/catalog/courses/";
+
+        string urlStr = begurl + subject + endurl; 
 
         curl_global_init(CURL_GLOBAL_ALL);
 
@@ -38,12 +65,11 @@ int main(void)
         curl_handle = curl_easy_init();
 
         /* set URL to get */
-        //curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/curric/MATH-ug.html");
-        curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/courses/MATH.html");
-
+        //curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/courses/MATH.html");
+        curl_easy_setopt(curl_handle, CURLOPT_URL, urlStr.c_str());
 
         /* no progress meter please */
-        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+        //curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
         /* send all data to this function  */
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
@@ -89,18 +115,25 @@ int main(void)
         sstr << in.rdbuf();
         string str = sstr.str();
 
+        // handle page not found error
+        if( str.find("<title>UC San Diego : File Not Found (404)</title>") != -1 ) {
+            cout << "Invalid subject\n";
+            tryAgain(result,searchAgain);
+            if ( searchAgain ) continue;
+            return -1;
+        }
+
         /* -- CUSTOM CLASS SEARCH -- */
-
-        string searchStr = "";
-
-        cout << "Enter class name: ";
-        cin >> searchStr;
 
         int pos = str.find(searchStr);
 
-        //int pos = str.find(argv[1]);
-        //int pos = str.find("math20c");
-        
+        // handle class not found error
+        if ( pos == -1 ) {
+            cout << "Invalid class\n";
+            tryAgain(result,searchAgain);
+            if ( searchAgain ) continue;
+        }
+
         string prereqSubStr = str.substr(pos);
 
         string prereqStr = "Prerequisites:</strong>";
@@ -115,18 +148,7 @@ int main(void)
 
         cout << newStr << endl;
 
-        string result = "";
-
-        cout << "Search again? (y/n): ";
-        
-        cin >> result;
-
-        if ( sayYes(result) ) {
-            searchAgain = true;
-        }
-        else {
-            searchAgain = false;
-        }
+        tryAgain(result,searchAgain);
 
     }         
     return 0;
@@ -141,4 +163,28 @@ bool sayYes(string result) {
             return true;
     }
     return false;
+}
+
+string getCourseURL(string str) {
+
+    // get string before first number
+    int i = 0;
+    while ( isalpha(str[i]) ) {
+        i++;
+    }
+    return str.substr(0,i);
+}
+
+bool tryAgain(string & result, bool & searchAgain) {
+
+    cout << "Search again? (y/n): ";
+    cin >> result;
+
+    if ( sayYes(result) ) {
+        searchAgain = true;
+    }
+    else {
+        searchAgain = false;
+    }
+
 }
