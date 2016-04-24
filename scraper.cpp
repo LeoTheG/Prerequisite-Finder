@@ -17,95 +17,128 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
     return written;
 }
 
+bool sayYes(string result); 
+
 int main(void)
+//int main(int argc, char * argv[])
 {
-    CURL *curl_handle;
-    static const char *headerfilename = "head.txt";
-    FILE *headerfile;
-    //static const char *bodyfilename = "body.txt";
-    //FILE *bodyfile;
+    bool searchAgain = true;
+    while ( searchAgain == true ) {
+        CURL *curl_handle;
+        static const char *headerfilename = "head.txt";
+        FILE *headerfile;
+        //static const char *bodyfilename = "body.txt";
+        //FILE *bodyfile;
 
-    curl_global_init(CURL_GLOBAL_ALL);
+        string url = "http://www.ucsd.edu/catalog/courses/";
 
-    /* init the curl session */
-    curl_handle = curl_easy_init();
+        curl_global_init(CURL_GLOBAL_ALL);
 
-    /* set URL to get */
-    //curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/curric/MATH-ug.html");
-    curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/courses/MATH.html");
+        /* init the curl session */
+        curl_handle = curl_easy_init();
+
+        /* set URL to get */
+        //curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/curric/MATH-ug.html");
+        curl_easy_setopt(curl_handle, CURLOPT_URL, "http://www.ucsd.edu/catalog/courses/MATH.html");
 
 
-    /* no progress meter please */
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+        /* no progress meter please */
+        curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
-    /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+        /* send all data to this function  */
+        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 
-    curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1);
+        curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1);
 
-    /* open the files */
-    headerfile = fopen(headerfilename,"w");
-    if (headerfile == NULL) {
-    curl_easy_cleanup(curl_handle);
-    return -1;
-    }
-    /*
-    bodyfile = fopen(bodyfilename,"w");
-    if (bodyfile == NULL) {
-    curl_easy_cleanup(curl_handle);
-    return -1;
-    }
-    */
+        /* open the files */
+        headerfile = fopen(headerfilename,"w");
+        if (headerfile == NULL) {
+        curl_easy_cleanup(curl_handle);
+        return -1;
+        }
+        /*
+        bodyfile = fopen(bodyfilename,"w");
+        if (bodyfile == NULL) {
+        curl_easy_cleanup(curl_handle);
+        return -1;
+        }
+        */
 
-    /* we want the headers to this file handle */
-    curl_easy_setopt(curl_handle,   CURLOPT_WRITEDATA, headerfile);
+        /* we want the headers to this file handle */
+        curl_easy_setopt(curl_handle,   CURLOPT_WRITEDATA, headerfile);
 
-    /*
-    * Notice here that if you want the actual data sent anywhere else but
-    * stdout, you should consider using the CURLOPT_WRITEDATA option.  */
+        /*
+        * Notice here that if you want the actual data sent anywhere else but
+        * stdout, you should consider using the CURLOPT_WRITEDATA option.  */
 
-    /* get it! */
-    curl_easy_perform(curl_handle);
+        /* get it! */
+        curl_easy_perform(curl_handle);
 
-    /* close the header file */
-    fclose(headerfile);
+        /* close the header file */
+        fclose(headerfile);
 
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
+        /* cleanup curl stuff */
+        curl_easy_cleanup(curl_handle);
 
-    /* place HTML into string */
+        /* place HTML into string */
 
-    ifstream in;
-    in.open(headerfilename);
+        ifstream in;
+        in.open(headerfilename);
 
-    stringstream sstr;
-    sstr << in.rdbuf();
-    string str = sstr.str();
+        stringstream sstr;
+        sstr << in.rdbuf();
+        string str = sstr.str();
 
-    /* -- CUSTOM CLASS SEARCH -- */
+        /* -- CUSTOM CLASS SEARCH -- */
 
-    string searchStr = "";
+        string searchStr = "";
 
-    cout << "Enter class name: ";
-    cin >> searchStr;
+        cout << "Enter class name: ";
+        cin >> searchStr;
 
-    int pos = str.find(searchStr);
-    //int pos = str.find(argv[1]);
-    
-    string prereqSubStr = str.substr(pos);
+        int pos = str.find(searchStr);
 
-    string prereqStr = "Prerequisites:</strong>";
+        //int pos = str.find(argv[1]);
+        //int pos = str.find("math20c");
+        
+        string prereqSubStr = str.substr(pos);
 
-    int prereqPos = prereqSubStr.find(prereqStr);
+        string prereqStr = "Prerequisites:</strong>";
 
-    //cout << prereqSubStr.substr(prereqPos + prereqStr.size()) << endl;
-    string endSubStr = "</p>";
-    int endPos = prereqSubStr.substr(prereqPos + prereqStr.size()).find(endSubStr); 
+        int prereqPos = prereqSubStr.find(prereqStr);
 
-    string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + 1, endPos - 1);
+        //cout << prereqSubStr.substr(prereqPos + prereqStr.size()) << endl;
+        string endSubStr = "</p>";
+        int endPos = prereqSubStr.substr(prereqPos + prereqStr.size()).find(endSubStr); 
 
-    cout << newStr << endl;
+        string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + 1, endPos - 1);
 
-    
+        cout << newStr << endl;
+
+        string result = "";
+
+        cout << "Search again? (y/n): ";
+        
+        cin >> result;
+
+        if ( sayYes(result) ) {
+            searchAgain = true;
+        }
+        else {
+            searchAgain = false;
+        }
+
+    }         
     return 0;
+}
+
+//TODO: fix magic numbers, add better searching for "yes"
+bool sayYes(string result) {
+    string yes[5] = {"y", "Y", "yes", "YES", "Yes"};
+    
+    for ( int i = 0; i < 5; i++ ) {
+        if ( result.compare(yes[i]) == 0 )
+            return true;
+    }
+    return false;
 }
