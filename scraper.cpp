@@ -173,7 +173,7 @@ int main(void)
             // fix substring to trim edges -- make neater
             string newStr = prereqSubStr.substr(prereqPos + prereqStr.size() + prereqStrend.size() + 1, endPos - 1);
 
-            //fixSpaces(newStr);
+            fixSpaces(newStr);
 
             ofstream out ("stuff", ofstream::out);
 
@@ -248,21 +248,25 @@ void fixSubject(string & subject) {
     }
 }
 
-
 void fixSpaces(string & str) {
+    string newStr="";
+    for ( int i = 0; i < str.length() + 1; i++ ) {
+        unsigned char c = str[i];
+        if ( isalpha(c) || isdigit(c) || c == ' ' ) {
+            if ( !(c == ' ' && str[i+1] == ' ' )) {
+                /*
+                int len = str.length();
+                int pos = 0;
+                while ( len > 80 ) {
+                    if ( pos = len%
+                }
 
-    string end = "";
-    string beg = "";
-
-    for ( int i = 0; i < str.length() - 1; i++ ) {
-        // cut out from middle of string
-        if( (str[i] == ' ' || str[i] == 9 || str[i] == 8) && 
-            (str[i+1] == ' ' || str[i+1] == 9 || str[i+1] == 8 )) {
-            end = str.substr(str.find(str[i+2]));
-            beg = str.substr(0, 2);
-            str = beg + end;
+                if ( i == 80 ) { 
+                    newStr.push_back('\n');
+                */
+                newStr.push_back(c);
+            }
         }
     }
-    str = beg + " " + end;
+    str = newStr;
 }
-
